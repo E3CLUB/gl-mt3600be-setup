@@ -19,7 +19,10 @@
 | 7 | ⚠️ 让管理页能保存自定义开关模块（绕过 `check_sync_status`） | 中 |
 | 8 | 安装 zram-swap（512MB 机型缓解 OOM） | 低 |
 | 9 | 隐私收尾：关闭云服务、远程管理、DDNS；顺手改时区/主机名 | 低 |
-| 10 | ⛔ 查看 / 修改无线地区码（UCI） | 高，涉及当地无线电法规 |
+| 10 | 简体中文完整菜单（放开中文界面下被隐藏的 VPN、AdGuard Home、动态 DNS、Tor） | 低 |
+| 11 | 完整安装 Tailscale 官方最新版，每天 04:00 自动升级（时间可改） | 中 |
+| 12 | 安装 AdGuard Home 官方最新版 | 中 |
+| 13 | ⛔ 查看 / 修改无线地区码（UCI） | 高，涉及当地无线电法规 |
 
 **第 1 项要做就必须最先做**：它改的是 flash 里的 factory 数据，不随固件走，改完建议恢复出厂让地区相关配置重新生成——开箱阶段做代价为零，等你把 Wi-Fi 和插件都配好了再改就得重来一遍。这一项**故意没有做成一键脚本**：每一步都有验证闸门（型号校验 → 整分区备份到本地并核对哈希 → 目标偏移必须恰好读到 `CN` → 写后回读必须是 `US`），读到的东西不对就停。
 
@@ -59,13 +62,18 @@ mt3600be-setup/
 │   ├── fan.md                     # 菜单 4 / 5（含四处锚点依据）
 │   ├── switch-button.md           # 菜单 6 / 7
 │   ├── system.md                  # 菜单 8 / 9
-│   └── wireless-region.md         # 菜单 10（危险项，单独一份）
+│   ├── zh-menu.md                 # 菜单 10（含前端过滤逻辑依据）
+│   ├── apps.md                    # 菜单 11 / 12
+│   └── wireless-region.md         # 菜单 13（危险项，单独一份）
 └── scripts/
     ├── lib-ssh.sh                 # 公共 SSH/SCP 封装，供以下脚本 source
     ├── install-ssh-key.sh
     ├── set-fan-temperature.sh
     ├── patch-fan-range-ui.sh
     ├── patch-switch-button-ui.sh
+    ├── patch-zh-menu.sh
+    ├── manage-app-update.sh       # Tailscale / AdGuard Home 入口（本地运行）
+    ├── gl-app-update.sh           # 路由器侧，由上一个脚本部署
     └── switch-handler-template.sh # 路由器侧模板
 ```
 接下来就是根据AI提示进行傻瓜操作了，不再赘述。
@@ -118,7 +126,33 @@ sh scripts/patch-fan-range-ui.sh restore       # 想撤销时：一键还原
 sh scripts/patch-switch-button-ui.sh apply myservice "My Service"
 ```
 
-> 第 3–5 步是按需选用的，不必全跑。带 `status` 的都是只读、可以放心先试；带 `apply` 的才会真正改动路由器，且都能用 `status` 查看、`restore` 还原。
+**第 6 步 · 简体中文完整菜单**（中文界面看不到 VPN、AdGuard Home 等菜单时用）：
+
+```sh
+sh scripts/patch-zh-menu.sh status     # 只读：列出当前对简体中文隐藏的菜单
+sh scripts/patch-zh-menu.sh apply      # 放开这些菜单
+sh scripts/patch-zh-menu.sh restore    # 想撤销时：一键还原
+```
+
+**第 7 步 · Tailscale 换成官方最新完整版，并每天凌晨 4 点自动升级**（路由器需要能访问 `pkgs.tailscale.com`）：
+
+```sh
+sh scripts/manage-app-update.sh tailscale status     # 只读：已装版本、官方最新版、剩余空间
+sh scripts/manage-app-update.sh tailscale install    # 安装官方最新版
+sh scripts/manage-app-update.sh tailscale cron-on    # 每天 04:00 自动检查并升级（可写成 cron-on 4 30）
+sh scripts/manage-app-update.sh tailscale cron-off   # 取消定时
+sh scripts/manage-app-update.sh tailscale restore    # 恢复固件自带版本
+```
+
+**第 8 步 · AdGuard Home 换成官方最新版**（路由器需要能访问 `static.adguard.com`）：
+
+```sh
+sh scripts/manage-app-update.sh adguardhome status
+sh scripts/manage-app-update.sh adguardhome install
+sh scripts/manage-app-update.sh adguardhome restore
+```
+
+> 第 3–8 步是按需选用的，不必全跑。带 `status` 的都是只读、可以放心先试；带 `apply` / `install` / `cron-on` 的才会真正改动路由器，且都能用 `status` 查看、`restore` 还原。
 
 **本机需要**：`ssh`、`scp`（OpenSSH ≥ 8.6，为了 `-O`；更旧的设 `MT3600BE_SCP_COMPAT=`）、`perl`、`gzip`、`sha256sum` 或 `shasum`。macOS 和主流 Linux 发行版默认都有。
 
@@ -128,6 +162,7 @@ sh scripts/patch-switch-button-ui.sh apply myservice "My Service"
 - **先备份再改。** 每次写入前都会自动备份；万一失败自动还原。
 - **最冒险的一步不自动化。** 唯一需要直接写 flash 的操作（改地区码）没做成脚本，而是带你一步步手动执行，中途设了四道检查——只要有一步结果不对就停下。
 - **网页补丁改得很谨慎。** 两个界面补丁靠一段唯一的文本来定位要改的位置，定位不唯一就拒绝修改；改完还会校验文件是否完好（`gzip -t` + SHA256）。两者都支持 `status`（查看状态）和 `restore`（一键还原）。
+- **换二进制只认官方源。** Tailscale 和 AdGuard Home 只从官方服务器下载，强制 SHA256 校验，新版本先试运行再替换，替换后服务起不来就自动换回固件原版。
 - **不碰物理开关。** 不替你拨开关、不同步拨杆方向、不自动启停任何服务。
 - **升级固件后请使用 Claude Code 重新运行此项目。** gl 网页修改补丁不会写进 `sysupgrade.conf`，所以刷新固件后这些界面改动会失效，需要重新执行一次。
 
@@ -136,10 +171,11 @@ sh scripts/patch-switch-button-ui.sh apply myservice "My Service"
 非官方项目，与 GL.iNet 无关。修改厂商固件的地区代码、前端资源和无线设置有风险，**请自行判断并承担后果**。
 
 - **第 1 项（固件地区代码）会直接写裸 flash 分区**，同一分区还存着 MAC 和射频校准数据。偏移量因型号而异（MT3600BE 是 `mtdblock3@16520`，而 MT3000 是 `@136`、AXT1800 是 `mtdblock8@152`——差两个数量级）。**照抄别的型号的数字会毁设备，且可能不可逆。** 也可能影响保修。
-- 第 10 项（无线地区码）可能违反当地无线电管理规定。
+- 第 13 项（无线地区码）可能违反当地无线电管理规定。
+- 第 11、12 项会替换固件自带的 Tailscale / AdGuard Home 二进制。开启定时自动升级意味着无人值守地改动路由器，如果它是你异地唯一的远程入口，请慎重。
 
 以上仅供在你自己拥有的设备上、合法合规的前提下使用。
 
-来源与致谢：地区代码的偏移量与命令来自社区公开教程（见 `references/region-code.md` 的来源列表），本项目在其基础上追加了型号校验、强制整分区备份、写前读值校验和写后回读校验。温度滑块部分的思路来自 wkdaily 的 `mt3600.sh` / GlInjector（见 `references/fan.md`）；本项目不引入 GlInjector，只做定点文本替换。
+来源与致谢：地区代码的偏移量与命令来自社区公开教程（见 `references/region-code.md` 的来源列表），本项目在其基础上追加了型号校验、强制整分区备份、写前读值校验和写后回读校验。温度滑块部分的思路来自 wkdaily 的 `mt3600.sh` / GlInjector（见 `references/fan.md`）；本项目不引入 GlInjector，只做定点文本替换。 Tailscale / AdGuard Home 的替换与恢复思路参考了 Admonstrator 的 glinet-tailscale-updater / glinet-adguard-updater（见 `references/apps.md`）；本项目不调用它们，直接取官方发布包。
 
 MIT License。

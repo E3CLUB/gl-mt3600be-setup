@@ -22,7 +22,7 @@ uci show glfan 2>/dev/null || echo "本机无 glfan 配置"
 ps w | grep '[g]l_fan' || echo "未发现 gl_fan 进程"
 ```
 
-无线地区码（**只看不改**，改动见菜单 10）：
+无线地区码（**只看不改**，改动见菜单 13）：
 
 ```sh
 grep -nE "option (country|region|rd_region|aregion)" \
