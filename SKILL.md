@@ -29,6 +29,7 @@ description: GL.iNet GL-MT3600BE（及多数 GL.iNet 4.x 固件机型）的开�
 | 11 | **完整安装 Tailscale 官方最新版** + 每天 04:00 自动升级（时间可改） | 中（替换固件自带二进制；无人值守升级） | [apps.md](references/apps.md) |
 | 12 | **安装 AdGuard Home 官方最新版** | 中（替换固件自带二进制；DNS 短暂中断） | [apps.md](references/apps.md) |
 | 13 | ⛔ **查看 / 修改无线地区码（UCI 国家码）** | 高，涉及当地无线电法规 | [wireless-region.md](references/wireless-region.md) |
+| 14 | **Wi-Fi 门控**：Tailscale 出口节点连通后才开放 Wi-Fi，等待时蓝灯闪；开机时用防火墙暂扣转发堵住空窗 | 低（`stop` 即恢复） | [wifi-gate.md](references/wifi-gate.md) |
 
 **顺序很重要**：先 `0` 体检确认型号，再决定要不要做 `1`。
 
@@ -89,6 +90,7 @@ Mac/Linux 侧脚本都读这几个环境变量：
 | `patch-zh-menu.sh` | 本地 | 简体中文完整菜单 `status` / `apply` / `restore`，JSON 等价性复核 + 哈希回读 |
 | `manage-app-update.sh` | 本地 | `<tailscale|adguardhome>` + `status` / `install` / `reinstall` / `restore` / `cron-on [HH] [MM]` / `cron-off` |
 | `gl-app-update.sh` | 路由器 | 由 `manage-app-update.sh` 部署为 `/usr/bin/gl-app-update`，下载、校验、替换、回退都在这里 |
+| `wifi-gate/` | 路由器 | Wi-Fi 门控：`wifi-gate.sh` 守护脚本、两个 init 脚本、`firewall.user.add`、`install.sh` 一键安装，部署步骤见 [wifi-gate.md](references/wifi-gate.md) |
 | `switch-handler-template.sh` | 路由器 | 拨动开关事件处理器模板，改两个变量后复制为 `/etc/gl-switch.d/<模块名>.sh` |
 | `lib-ssh.sh` | — | 供上述脚本 source，不要直接执行 |
 

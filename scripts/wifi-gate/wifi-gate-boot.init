@@ -1,0 +1,12 @@
+#!/bin/sh /etc/rc.common
+# 开机早期（network S20 之前）：把 Wi-Fi 配置置为开（2.4G 射频必须在开机时完整初始化，否则本次开机内无法发射），
+# 并用防火墙暂扣 LAN 转发堵住出口节点就绪前的空窗；之后由 /etc/init.d/wifi-gate(S82) 按出口节点状态关/开 Wi-Fi 并解除暂扣。
+START=19
+
+preboot() {
+	[ -x /etc/init.d/wifi-gate ] && /etc/init.d/wifi-gate enabled && /usr/sbin/wifi-gate.sh preboot
+}
+
+boot()  { preboot; }
+start() { preboot; }
+stop()  { :; }

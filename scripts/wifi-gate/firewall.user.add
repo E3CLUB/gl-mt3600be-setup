@@ -1,0 +1,5 @@
+# wifi-gate-hold: 开机到 Tailscale 出口节点就绪之间暂扣 LAN 转发（由 /usr/sbin/wifi-gate.sh 控制，标志文件存在时生效）
+if [ -f /var/run/wifi-gate.hold ]; then
+	iptables -C FORWARD -i br-lan -m comment --comment wifi-gate-hold -j DROP 2>/dev/null || iptables -I FORWARD -i br-lan -m comment --comment wifi-gate-hold -j DROP
+	ip6tables -C FORWARD -i br-lan -m comment --comment wifi-gate-hold -j DROP 2>/dev/null || ip6tables -I FORWARD -i br-lan -m comment --comment wifi-gate-hold -j DROP
+fi
