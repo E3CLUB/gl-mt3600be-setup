@@ -1,0 +1,8 @@
+# /etc/ts-cn-domains.conf 示例：只写要改的项。下面是 2026-11-26 实测路由器上的实际配置，
+# 用于和既有的 ts-split 分流、PicoClaw 告警转发衔接。
+CN_IPSET=ts_direct_dns
+STATE_DIR=/etc/ts-split
+LOCK=/var/lock/ts-split.lock
+ALERT_TAG=ts-claw
+# 经日本 VPS 代下载：VPS 上 authorized_keys 用 command= 把这把密钥固定到一个只会输出清单 tar.gz 的脚本（见 references/cn-domains.md）
+RELAY_CMD="ssh -i /etc/ts-split/secret/vps-claw.key -y root@100.88.88.112 cnlist"

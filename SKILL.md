@@ -1,6 +1,6 @@
 ---
 name: mt3600be-setup
-description: GL.iNet GL-MT3600BE（及多数 GL.iNet 4.x 固件机型）的开箱设置助手。提供可选项清单：修改固件地区代码 CN 改 US 解锁国际版功能、只读体检、SSH 接入与公钥免密、全量备份、风扇工作温度、GL 管理页温度滑块范围补丁、物理拨动开关绑定任意服务、开关页面支持自定义模块、zram-swap、关闭云服务与远程管理、简体中文完整菜单、Tailscale 官方最新版完整安装与每天定时自动升级、AdGuard Home 官方最新版安装、查看/修改无线地区码。用户提到 MT3600BE、GL.iNet 路由器开箱、改地区/地区代码/国际版/解锁隐藏菜单、SSH 免密、风扇温度、温度滑块、拨动开关、中文菜单不全/VPN 菜单不显示、Tailscale 升级、AdGuard Home 升级时使用。
+description: GL.iNet GL-MT3600BE（及多数 GL.iNet 4.x 固件机型）的开箱设置助手。提供可选项清单：修改固件地区代码 CN 改 US 解锁国际版功能、只读体检、SSH 接入与公钥免密、全量备份、风扇工作温度、GL 管理页温度滑块范围补丁、物理拨动开关绑定任意服务、开关页面支持自定义模块、zram-swap、关闭云服务与远程管理、简体中文完整菜单、Tailscale 官方最新版完整安装与每天定时自动升级、AdGuard Home 官方最新版安装、查看/修改无线地区码、国内域名清单（dnsmasq-china-list）每周自动更新。用户提到 MT3600BE、GL.iNet 路由器开箱、改地区/地区代码/国际版/解锁隐藏菜单、SSH 免密、风扇温度、温度滑块、拨动开关、中文菜单不全/VPN 菜单不显示、Tailscale 升级、AdGuard Home 升级、国内域名清单更新/国内域名直连时使用。
 ---
 
 # GL-MT3600BE 开箱设置
@@ -30,6 +30,7 @@ description: GL.iNet GL-MT3600BE（及多数 GL.iNet 4.x 固件机型）的开�
 | 12 | **安装 AdGuard Home 官方最新版** | 中（替换固件自带二进制；DNS 短暂中断） | [apps.md](references/apps.md) |
 | 13 | ⛔ **查看 / 修改无线地区码（UCI 国家码）** | 高，涉及当地无线电法规 | [wireless-region.md](references/wireless-region.md) |
 | 14 | **Wi-Fi 门控**：Tailscale 出口节点连通后才开放 Wi-Fi，等待时蓝灯闪；开机时用防火墙暂扣转发堵住空窗 | 低（`stop` 即恢复） | [wifi-gate.md](references/wifi-gate.md) |
+| 15 | **国内域名清单自动更新**：每周下载约 11 万个国内域名，生成 dnsmasq 清单（国内解析器 + 填入直连 ipset），可经境外 VPS 代下载压缩后拉回，校验失败沿用旧版、替换失败自动回滚。**须已有按 ipset 打标直连的分流**，内存 ≥ 1 GB | 低（只改 dnsmasq 配置，自动回滚） | [cn-domains.md](references/cn-domains.md) |
 
 **顺序很重要**：先 `0` 体检确认型号，再决定要不要做 `1`。
 
@@ -91,6 +92,7 @@ Mac/Linux 侧脚本都读这几个环境变量：
 | `manage-app-update.sh` | 本地 | `<tailscale|adguardhome>` + `status` / `install` / `reinstall` / `restore` / `cron-on [HH] [MM]` / `cron-off` |
 | `gl-app-update.sh` | 路由器 | 由 `manage-app-update.sh` 部署为 `/usr/bin/gl-app-update`，下载、校验、替换、回退都在这里 |
 | `wifi-gate/` | 路由器 | Wi-Fi 门控：`wifi-gate.sh` 守护脚本、两个 init 脚本、`firewall.user.add`、`install.sh` 一键安装，部署步骤见 [wifi-gate.md](references/wifi-gate.md) |
+| `cn-domains/` | 路由器 | 国内域名清单自动更新：`ts-cn-domains.sh` 更新脚本、`install.sh` 安装/卸载/状态、`ts-cn-domains.conf.example` 配置示例，步骤见 [cn-domains.md](references/cn-domains.md) |
 | `switch-handler-template.sh` | 路由器 | 拨动开关事件处理器模板，改两个变量后复制为 `/etc/gl-switch.d/<模块名>.sh` |
 | `lib-ssh.sh` | — | 供上述脚本 source，不要直接执行 |
 
